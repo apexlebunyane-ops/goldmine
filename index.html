@@ -3250,9 +3250,56 @@
                 </div>
             </div>
         </div>
+
+        <!-- Withdrawal Modal -->
+        <div id="withdraw-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-title">Withdraw Funds</div>
+                    <div class="close-modal">&times;</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Select Wallet</label>
+                    <div class="wallet-selection">
+                        <div class="wallet-option" data-wallet="income">
+                            <div class="wallet-icon-large">💳</div>
+                            <div class="wallet-name">Income Wallet</div>
+                            <div class="wallet-balance">R0.00</div>
+                        </div>
+                        <div class="wallet-option" data-wallet="commission">
+                            <div class="wallet-icon-large">📊</div>
+                            <div class="wallet-name">Commission</div>
+                            <div class="wallet-balance">R0.00</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="withdraw-amount">Amount (Minimum R45)</label>
+                    <input type="number" id="withdraw-amount" class="form-input" min="45" placeholder="Enter amount">
+                    <div class="withdrawal-fee">Withdrawal fee: 15%</div>
+                </div>
+                <div id="withdrawal-summary" class="withdrawal-summary" style="display: none;">
+                    <!-- Withdrawal summary will be inserted here -->
+                </div>
+                <div class="payment-actions">
+                    <button id="confirm-withdrawal" class="btn btn-primary">Confirm Withdrawal</button>
+                    <button id="cancel-withdrawal" class="btn btn-secondary">Cancel</button>
+                </div>
+            </div>
+        </div>
     </section>
 
     <script>
+        // Local Storage Keys
+        const STORAGE_KEYS = {
+            USER_DATA: 'goldmine_user_data_',
+            DEPOSITS: 'goldmine_deposits_',
+            WITHDRAWALS: 'goldmine_withdrawals_',
+            PACKAGES: 'goldmine_packages_',
+            TRANSACTIONS: 'goldmine_transactions_',
+            PENDING_DEPOSITS: 'goldmine_pending_deposits_'
+        };
+
         // Firebase Authentication State Listener
         document.addEventListener('DOMContentLoaded', function() {
             // WhatsApp Group Button - UPDATED LINK
@@ -3282,6 +3329,160 @@
 
             // Initialize authentication functionality
             initAuth();
+            
+            // Initialize user data
+            let userData = {
+                fullName: '',
+                phone: '',
+                rechargeBalance: 0,
+                incomeBalance: 0,
+                commissionBalance: 0,
+                rewardPoints: 0,
+                activeInvestments: 0,
+                totalEarnings: 0,
+                hasInvested: false,
+                orders: [],
+                team: {
+                    activeMembers: 0,
+                    unactivatedMembers: 0,
+                    totalCommission: 0,
+                    members: []
+                },
+                invitationCode: generateInvitationCode(),
+                lastCheckin: null,
+                referredBy: null,
+                transactions: [],
+                pendingDeposits: [],
+                lastDailyIncomeDate: null
+            };
+            
+            // Load data from Local Storage
+            function loadUserDataFromLocalStorage(userId) {
+                try {
+                    // Load user data
+                    const userDataStr = localStorage.getItem(STORAGE_KEYS.USER_DATA + userId);
+                    if (userDataStr) {
+                        const savedData = JSON.parse(userDataStr);
+                        userData = { ...userData, ...savedData };
+                    }
+                    
+                    // Load packages
+                    const packagesStr = localStorage.getItem(STORAGE_KEYS.PACKAGES + userId);
+                    if (packagesStr) {
+                        const packages = JSON.parse(packagesStr);
+                        userData.orders = packages;
+                        userData.activeInvestments = packages.length;
+                        userData.hasInvested = packages.length > 0;
+                    }
+                    
+                    // Load pending deposits
+                    const pendingStr = localStorage.getItem(STORAGE_KEYS.PENDING_DEPOSITS + userId);
+                    if (pendingStr) {
+                        userData.pendingDeposits = JSON.parse(pendingStr);
+                    }
+                    
+                    // Load transactions
+                    const transactionsStr = localStorage.getItem(STORAGE_KEYS.TRANSACTIONS + userId);
+                    if (transactionsStr) {
+                        userData.transactions = JSON.parse(transactionsStr);
+                    }
+                    
+                    // Update balances based on packages
+                    calculateDailyIncomeFromPackages();
+                    
+                    // Update UI
+                    updateUI();
+                    
+                    // Show pending deposits if any
+                    showPendingDeposits();
+                    
+                    return true;
+                } catch (error) {
+                    console.error("Error loading from local storage:", error);
+                    return false;
+                }
+            }
+            
+            // Save data to Local Storage
+            function saveUserDataToLocalStorage(userId) {
+                try {
+                    localStorage.setItem(STORAGE_KEYS.USER_DATA + userId, JSON.stringify({
+                        fullName: userData.fullName,
+                        phone: userData.phone,
+                        rechargeBalance: userData.rechargeBalance,
+                        incomeBalance: userData.incomeBalance,
+                        commissionBalance: userData.commissionBalance,
+                        rewardPoints: userData.rewardPoints,
+                        totalEarnings: userData.totalEarnings,
+                        hasInvested: userData.hasInvested,
+                        invitationCode: userData.invitationCode,
+                        lastCheckin: userData.lastCheckin,
+                        referredBy: userData.referredBy,
+                        lastDailyIncomeDate: userData.lastDailyIncomeDate
+                    }));
+                    
+                    // Save packages
+                    localStorage.setItem(STORAGE_KEYS.PACKAGES + userId, JSON.stringify(userData.orders));
+                    
+                    // Save pending deposits
+                    localStorage.setItem(STORAGE_KEYS.PENDING_DEPOSITS + userId, JSON.stringify(userData.pendingDeposits));
+                    
+                    // Save transactions
+                    localStorage.setItem(STORAGE_KEYS.TRANSACTIONS + userId, JSON.stringify(userData.transactions));
+                    
+                    return true;
+                } catch (error) {
+                    console.error("Error saving to local storage:", error);
+                    return false;
+                }
+            }
+            
+            // Calculate daily income from packages
+            function calculateDailyIncomeFromPackages() {
+                const now = new Date();
+                const today = now.toDateString();
+                
+                // Check if we already processed income today
+                if (userData.lastDailyIncomeDate === today) {
+                    return;
+                }
+                
+                userData.orders.forEach(order => {
+                    if (order.status === 'Active') {
+                        // Calculate days since last payout
+                        const lastPayout = order.lastPayoutDate ? new Date(order.lastPayoutDate) : new Date(order.startDate);
+                        const daysSinceLastPayout = Math.floor((now - lastPayout) / (1000 * 60 * 60 * 24));
+                        
+                        if (daysSinceLastPayout >= 1) {
+                            // Add daily income for each day
+                            for (let i = 0; i < Math.min(daysSinceLastPayout, order.daysRemaining); i++) {
+                                userData.incomeBalance += order.dailyIncome;
+                                userData.totalEarnings += order.dailyIncome;
+                                
+                                // Reduce days remaining
+                                order.daysRemaining--;
+                                
+                                // If no days remaining, mark as completed
+                                if (order.daysRemaining <= 0) {
+                                    order.status = 'Completed';
+                                    userData.activeInvestments--;
+                                }
+                            }
+                            
+                            // Update last payout date
+                            order.lastPayoutDate = now.toISOString();
+                        }
+                    }
+                });
+                
+                // Update last daily income date
+                userData.lastDailyIncomeDate = today;
+                
+                // Save to local storage
+                if (auth.currentUser) {
+                    saveUserDataToLocalStorage(auth.currentUser.uid);
+                }
+            }
             
             // Initialize dashboard functionality (will be called when user logs in)
             function initDashboard() {
@@ -3483,12 +3684,14 @@
                     // Close modal
                     document.getElementById('investment-confirm-modal').style.display = 'none';
                     
-                    // Save data to Firebase
-                    saveUserData();
+                    // Save data to Local Storage
+                    if (auth.currentUser) {
+                        saveUserDataToLocalStorage(auth.currentUser.uid);
+                    }
                     
                     // Update network status if this user was referred
                     if (userData.referredBy) {
-                        updateTeamMemberStatus(user.uid, 'active');
+                        updateTeamMemberStatus(auth.currentUser.uid, 'active');
                     }
                 });
                 
@@ -3838,11 +4041,29 @@
                         userData.commissionBalance -= amount;
                     }
                     
+                    // Record withdrawal transaction
+                    const withdrawalId = 'WTH' + Date.now();
+                    const withdrawalRecord = {
+                        id: withdrawalId,
+                        amount: amount,
+                        fee: fee,
+                        netAmount: netAmount,
+                        wallet: wallet,
+                        status: 'pending',
+                        date: new Date().toISOString(),
+                        userId: auth.currentUser.uid
+                    };
+                    
+                    // Add to transactions
+                    userData.transactions.push(withdrawalRecord);
+                    
                     // Update UI
                     updateUI();
                     
-                    // Save data
-                    saveUserData();
+                    // Save to Local Storage
+                    if (auth.currentUser) {
+                        saveUserDataToLocalStorage(auth.currentUser.uid);
+                    }
                     
                     // Redirect to WhatsApp with withdrawal details
                     const message = `Withdrawal Request:\nAmount: R${amount}\nFee: R${fee.toFixed(2)}\nNet Amount: R${netAmount.toFixed(2)}\nWallet: ${wallet}`;
@@ -3897,69 +4118,6 @@
                     document.getElementById('success-modal').style.display = 'none';
                 });
             }
-
-            // Initialize user data
-            let userData = {
-                fullName: '',
-                phone: '',
-                rechargeBalance: 0,
-                incomeBalance: 0,
-                commissionBalance: 0,
-                rewardPoints: 0,
-                activeInvestments: 0,
-                totalEarnings: 0,
-                hasInvested: false,
-                orders: [],
-                team: {
-                    activeMembers: 0,
-                    unactivatedMembers: 0,
-                    totalCommission: 0,
-                    members: []
-                },
-                invitationCode: generateInvitationCode(),
-                lastCheckin: null,
-                referredBy: null,
-                transactions: [],
-                pendingDeposits: [] // NEW: Track pending deposits
-            };
-            
-            // Load data from Firebase if available
-            function loadUserData(userId) {
-                const userDocRef = doc(db, "users", userId);
-                getDoc(userDocRef).then((docSnap) => {
-                    if (docSnap.exists()) {
-                        userData = { ...userData, ...docSnap.data() };
-                        updateUI();
-                        
-                        // Show pending deposits if any
-                        showPendingDeposits();
-                        
-                        // Load team members if any
-                        if (userData.team && userData.team.members && userData.team.members.length > 0) {
-                            loadTeamMembers();
-                        }
-                    } else {
-                        // Create new user document
-                        saveUserData();
-                    }
-                }).catch((error) => {
-                    console.error("Error loading user data:", error);
-                });
-            }
-            
-            // Save user data to Firebase
-            function saveUserData() {
-                if (!auth.currentUser) return;
-                
-                const userDocRef = doc(db, "users", auth.currentUser.uid);
-                setDoc(userDocRef, userData, { merge: true })
-                .then(() => {
-                    console.log("User data saved successfully");
-                })
-                .catch((error) => {
-                    console.error("Error saving user data:", error);
-                });
-            }
             
             // Function to calculate daily income based on gold mining amount
             function calculateDailyIncome(amount) {
@@ -3996,14 +4154,41 @@
                     if (timeLeft <= 0) {
                         clearInterval(countdown);
                         
-                        // Complete the deposit process
-                        completeDepositProcess(amount);
+                        // Complete the deposit process with 3 minute delay
+                        scheduleDepositProcess(amount);
                         
                         // Hide countdown modal
                         countdownModal.style.display = 'none';
                         
                         // Reset form
                         resetDepositModal();
+                    }
+                }, 1000);
+            }
+            
+            // Function to schedule deposit process with 3 minute delay
+            function scheduleDepositProcess(amount) {
+                // Show processing screen
+                document.getElementById('processing-screen').style.display = 'flex';
+                
+                // Start 30 second processing countdown
+                let processingTimeLeft = 30;
+                const processingCountdown = document.getElementById('processing-countdown');
+                
+                const processingInterval = setInterval(function() {
+                    processingTimeLeft--;
+                    processingCountdown.textContent = `0:${processingTimeLeft < 10 ? '0' : ''}${processingTimeLeft}`;
+                    
+                    if (processingTimeLeft <= 0) {
+                        clearInterval(processingInterval);
+                        
+                        // Hide processing screen after 30 seconds
+                        document.getElementById('processing-screen').style.display = 'none';
+                        
+                        // Schedule funds to reflect after 3 minutes (180 seconds)
+                        setTimeout(function() {
+                            completeDepositProcess(amount);
+                        }, 180000); // 3 minutes = 180,000 milliseconds
                     }
                 }, 1000);
             }
@@ -4022,7 +4207,6 @@
                 };
                 
                 // Add to transaction records
-                if (!userData.transactions) userData.transactions = [];
                 userData.transactions.push(depositRecord);
                 
                 // IMMEDIATELY add funds to gold balance
@@ -4034,8 +4218,10 @@
                 // Update UI immediately
                 updateUI();
                 
-                // Save data immediately (this ensures funds persist even after reload/logout)
-                saveUserData();
+                // Save data to Local Storage
+                if (auth.currentUser) {
+                    saveUserDataToLocalStorage(auth.currentUser.uid);
+                }
                 
                 // Show success message
                 showSuccessModal(`Deposit of R${amount} has been successfully processed! Funds added to your Gold Wallet. You can now purchase gold mining packages.`);
@@ -4266,7 +4452,12 @@
                 };
                 
                 userData.pendingDeposits.push(deposit);
-                saveUserData();
+                
+                // Save to Local Storage
+                if (auth.currentUser) {
+                    saveUserDataToLocalStorage(auth.currentUser.uid);
+                }
+                
                 showPendingDeposits();
                 
                 return depositId;
@@ -4277,7 +4468,12 @@
                 if (!userData.pendingDeposits) return;
                 
                 userData.pendingDeposits = userData.pendingDeposits.filter(deposit => deposit.id !== depositId);
-                saveUserData();
+                
+                // Save to Local Storage
+                if (auth.currentUser) {
+                    saveUserDataToLocalStorage(auth.currentUser.uid);
+                }
+                
                 showPendingDeposits();
             }
             
@@ -4411,8 +4607,10 @@
                                 updateUI();
                                 loadTeamData();
                                 
-                                // Save updated team data
-                                saveUserData();
+                                // Save updated team data to Local Storage
+                                if (auth.currentUser) {
+                                    saveUserDataToLocalStorage(auth.currentUser.uid);
+                                }
                             }
                         });
                     });
@@ -4444,8 +4642,10 @@
                     // Update UI
                     updateUI();
                     
-                    // Save data
-                    saveUserData();
+                    // Save to Local Storage
+                    if (auth.currentUser) {
+                        saveUserDataToLocalStorage(auth.currentUser.uid);
+                    }
                     
                     showSuccessModal(`Check-in successful! You received R${randomAmount} in your Income Wallet.`);
                 } else {
@@ -4471,47 +4671,12 @@
                 // Update UI
                 updateUI();
                 
-                // Save data
-                saveUserData();
+                // Save to Local Storage
+                if (auth.currentUser) {
+                    saveUserDataToLocalStorage(auth.currentUser.uid);
+                }
                     
                 showSuccessModal(`Successfully exchanged ${amount} gold points for R${amount} in your Income Wallet!`);
-            }
-            
-            function processDailyIncome() {
-                const now = new Date();
-                const today = now.toDateString();
-                
-                userData.orders.forEach(order => {
-                    if (order.status === 'Active') {
-                        // For gold mining, payout starts the next day
-                        const lastPayout = order.lastPayoutDate ? new Date(order.lastPayoutDate) : new Date(order.startDate);
-                        const daysSinceLastPayout = Math.floor((now - lastPayout) / (1000 * 60 * 60 * 24));
-                        
-                        if (daysSinceLastPayout >= 1) {
-                            // Add daily income to wallet
-                            userData.incomeBalance += order.dailyIncome;
-                            userData.totalEarnings += order.dailyIncome;
-                            
-                            // Update last payout date
-                            order.lastPayoutDate = now.toISOString();
-                            
-                            // Reduce days remaining
-                            order.daysRemaining--;
-                            
-                            // If no days remaining, mark as completed
-                            if (order.daysRemaining <= 0) {
-                                order.status = 'Completed';
-                                userData.activeInvestments--;
-                            }
-                            
-                            console.log(`Daily income: R${order.dailyIncome} added from ${order.name}`);
-                        }
-                    }
-                });
-                
-                // Update UI and save data
-                updateUI();
-                saveUserData();
             }
             
             function generateInvitationCode() {
@@ -4558,7 +4723,11 @@
                         
                         // Update current user's data to show they were referred
                         userData.referredBy = inviterId;
-                        saveUserData();
+                        
+                        // Save to Local Storage
+                        if (auth.currentUser) {
+                            saveUserDataToLocalStorage(auth.currentUser.uid);
+                        }
                     }
                 }).catch((error) => {
                     console.error("Error recording referral:", error);
@@ -4617,11 +4786,6 @@
                 });
             }
             
-            // Simulate daily income (for demo purposes - would be daily in real app)
-            setInterval(function() {
-                processDailyIncome();
-            }, 30000); // Check every 30 seconds for demo (would be 24 hours in real app)
-            
             function showDashboard(user) {
                 document.getElementById('auth-section').style.display = 'none';
                 document.getElementById('dashboard-section').style.display = 'block';
@@ -4635,15 +4799,16 @@
                 document.getElementById('profile-name').textContent = displayName;
                 document.getElementById('profile-phone').textContent = phone;
                 
-                // Load user data from Firebase
-                loadUserData(user.uid);
+                // Load user data from Local Storage
+                loadUserDataFromLocalStorage(user.uid);
                 
                 // Initialize dashboard functionality
                 initDashboard();
                 updateUI();
                 
                 // Process any pending daily income
-                processDailyIncome();
+                calculateDailyIncomeFromPackages();
+                updateUI();
             }
             
             function showAuth() {
@@ -4862,8 +5027,8 @@
                             recordReferral(user.uid, referralCode);
                         }
                         
-                        // Save user data
-                        saveUserData();
+                        // Save user data to Local Storage
+                        saveUserDataToLocalStorage(user.uid);
                         
                         showMessage('Account created successfully!', 'success');
                         
@@ -4907,7 +5072,7 @@
                         // Update phone in user data if not already set
                         if (!userData.phone && phone) {
                             userData.phone = '+27' + phone;
-                            saveUserData();
+                            saveUserDataToLocalStorage(user.uid);
                         }
                         
                         showMessage('Login successful!', 'success');
