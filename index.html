@@ -3180,6 +3180,11 @@
                     </div>
                 </div>
                 
+                <!-- Upload Success Message -->
+                <div id="upload-success-message" class="success-message" style="display: none;">
+                    <i class="fas fa-check-circle"></i> Uploaded Successful!
+                </div>
+                
                 <p style="margin-top: 15px;">Have you completed the payment?</p>
                 <div class="btn-group">
                     <button id="payment-yes" class="btn btn-primary" disabled>Yes, I've Paid</button>
@@ -3250,9 +3255,9 @@
     <script>
         // Firebase Authentication State Listener
         document.addEventListener('DOMContentLoaded', function() {
-            // WhatsApp Group Button
+            // WhatsApp Group Button - UPDATED LINK
             document.getElementById('whatsapp-group-btn').addEventListener('click', function() {
-                window.open('https://chat.whatsapp.com/EQZd2kHQPWLKTkOp9p5Vka?mode=hqrt1', '_blank');
+                window.open('https://chat.whatsapp.com/BhwnPF0lqXh5o9FVS84al0', '_blank');
             });
 
             // Check for referral code in URL
@@ -3550,9 +3555,9 @@
                     this.reset();
                 });
                 
-                // Customer Service
+                // Customer Service - UPDATED WHATSAPP NUMBER
                 document.getElementById('support-btn').addEventListener('click', function() {
-                    window.open('https://wa.me/27631287462', '_blank');
+                    window.open('https://wa.me/27686891353', '_blank');
                 });
                 
                 // Transaction Records
@@ -3646,6 +3651,9 @@
                     document.getElementById('deposit-modal').style.display = 'none';
                     document.getElementById('payment-confirm-modal').style.display = 'flex';
                     resetProofUpload();
+                    
+                    // Clear upload success message
+                    document.getElementById('upload-success-message').style.display = 'none';
                 });
                 
                 // Cancel payment
@@ -3653,7 +3661,7 @@
                     document.getElementById('deposit-modal').style.display = 'none';
                 });
                 
-                // Proof of payment upload functionality
+                // Proof of payment upload functionality - MODIFIED
                 const proofUploadBox = document.getElementById('proof-upload-box');
                 const proofFileInput = document.getElementById('proof-file-input');
                 const proofPreview = document.getElementById('proof-preview');
@@ -3662,6 +3670,7 @@
                 const changeProofBtn = document.getElementById('change-proof-btn');
                 const submitProofBtn = document.getElementById('submit-proof-btn');
                 const paymentYesBtn = document.getElementById('payment-yes');
+                const uploadSuccessMessage = document.getElementById('upload-success-message');
                 
                 proofUploadBox.addEventListener('click', function() {
                     proofFileInput.click();
@@ -3690,7 +3699,6 @@
                             proofUploadBox.style.display = 'none';
                             proofPreview.style.display = 'block';
                             submitProofBtn.disabled = false;
-                            paymentYesBtn.disabled = false;
                         };
                         reader.readAsDataURL(file);
                     }
@@ -3702,8 +3710,10 @@
                     proofFileInput.value = '';
                     submitProofBtn.disabled = true;
                     paymentYesBtn.disabled = true;
+                    uploadSuccessMessage.style.display = 'none';
                 });
                 
+                // MODIFIED: When submit button is clicked, show success message and enable "I've Paid" button
                 submitProofBtn.addEventListener('click', function() {
                     const file = proofFileInput.files[0];
                     if (!file) {
@@ -3711,20 +3721,32 @@
                         return;
                     }
                     
-                    // In a real app, you would upload the file to a server
-                    // For this demo, we'll just simulate the upload
-                    showSuccessModal('Proof of payment uploaded successfully!');
+                    // Show upload success message
+                    uploadSuccessMessage.style.display = 'block';
                     
-                    // Proceed to warning modal
-                    document.getElementById('payment-confirm-modal').style.display = 'none';
-                    document.getElementById('payment-warning-modal').style.display = 'flex';
+                    // Enable the "I've Paid" button
+                    paymentYesBtn.disabled = false;
+                    
+                    // Hide submit button and show success state
+                    submitProofBtn.style.display = 'none';
+                    
+                    // Show message that upload was successful
+                    setTimeout(() => {
+                        uploadSuccessMessage.innerHTML = '<i class="fas fa-check-circle"></i> Uploaded Successful! You can now click "Yes, I\'ve Paid"';
+                    }, 1000);
                 });
                 
-                // Payment confirmation
+                // Payment confirmation - MODIFIED
                 document.getElementById('payment-yes').addEventListener('click', function() {
                     const file = proofFileInput.files[0];
                     if (!file) {
                         alert('Please upload proof of payment first');
+                        return;
+                    }
+                    
+                    // Check if proof was submitted
+                    if (submitProofBtn.style.display !== 'none') {
+                        alert('Please click the "Submit" button after uploading your proof of payment');
                         return;
                     }
                     
@@ -3737,12 +3759,12 @@
                     document.getElementById('deposit-modal').style.display = 'flex';
                 });
                 
-                // Payment warning confirmation
+                // Payment warning confirmation - MODIFIED
                 document.getElementById('payment-confirm-yes').addEventListener('click', function() {
                     document.getElementById('payment-warning-modal').style.display = 'none';
                     
-                    // Show 3D secure verification page
-                    start3DSecureVerification();
+                    // Show countdown modal
+                    startCountdown();
                 });
                 
                 document.getElementById('payment-confirm-no').addEventListener('click', function() {
@@ -3953,30 +3975,23 @@
                 return amount * 0.2342;
             }
             
-            // Function to show 3D secure verification page
-            function start3DSecureVerification() {
+            // Function to start countdown after payment confirmation
+            function startCountdown() {
                 const amount = getDepositAmount();
-                const secureVerification = document.getElementById('secure-verification');
-                const countdownElement = document.getElementById('secure-countdown');
+                const countdownModal = document.getElementById('countdown-modal');
+                const countdownTimer = document.getElementById('countdown-timer');
                 
-                // Store the deposit amount for later use
-                window.pendingDepositAmount = amount;
+                // Show countdown modal
+                countdownModal.style.display = 'flex';
                 
-                // Show 3D secure page
-                secureVerification.style.display = 'flex';
-                
-                // Start 3 minute countdown
-                let timeLeft = 3 * 60; // 3 minutes in seconds
+                // Start 30 second countdown
+                let timeLeft = 30; // 30 seconds
                 
                 const countdown = setInterval(function() {
                     timeLeft--;
                     
-                    // Calculate minutes and seconds
-                    const minutes = Math.floor(timeLeft / 60);
-                    const seconds = timeLeft % 60;
-                    
                     // Update countdown display
-                    countdownElement.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+                    countdownTimer.textContent = `0:${timeLeft < 10 ? '0' : ''}${timeLeft}`;
                     
                     if (timeLeft <= 0) {
                         clearInterval(countdown);
@@ -3984,8 +3999,8 @@
                         // Complete the deposit process
                         completeDepositProcess(amount);
                         
-                        // Hide 3D secure page
-                        secureVerification.style.display = 'none';
+                        // Hide countdown modal
+                        countdownModal.style.display = 'none';
                         
                         // Reset form
                         resetDepositModal();
@@ -4019,11 +4034,11 @@
                 // Update UI immediately
                 updateUI();
                 
-                // Save data immediately
+                // Save data immediately (this ensures funds persist even after reload/logout)
                 saveUserData();
                 
                 // Show success message
-                showSuccessModal(`Deposit of R${amount} has been successfully processed! Funds added to your Gold Wallet.`);
+                showSuccessModal(`Deposit of R${amount} has been successfully processed! Funds added to your Gold Wallet. You can now purchase gold mining packages.`);
                 
                 // Remove from pending deposits if it was there
                 removePendingDeposit(depositId);
@@ -4186,7 +4201,9 @@
                 document.getElementById('proof-preview').style.display = 'none';
                 document.getElementById('proof-file-input').value = '';
                 document.getElementById('submit-proof-btn').disabled = true;
+                document.getElementById('submit-proof-btn').style.display = 'block';
                 document.getElementById('payment-yes').disabled = true;
+                document.getElementById('upload-success-message').style.display = 'none';
             }
             
             // Function to reset withdrawal modal
