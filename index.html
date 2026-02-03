@@ -1914,6 +1914,107 @@
             margin-top: 20px;
             color: var(--text-gray);
         }
+
+        /* Proof of Payment Upload Styles */
+        .proof-upload-container {
+            margin: 20px 0;
+        }
+        
+        .proof-upload-box {
+            border: 2px dashed rgba(255, 215, 0, 0.5);
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            background-color: rgba(255, 215, 0, 0.05);
+        }
+        
+        .proof-upload-box:hover {
+            background-color: rgba(255, 215, 0, 0.1);
+            border-color: var(--gold-primary);
+        }
+        
+        .proof-upload-icon {
+            font-size: 48px;
+            color: var(--gold-primary);
+            margin-bottom: 15px;
+        }
+        
+        .proof-upload-text {
+            margin-bottom: 10px;
+            color: var(--text-light);
+        }
+        
+        .proof-upload-note {
+            font-size: 12px;
+            color: var(--text-gray);
+            margin-top: 10px;
+        }
+        
+        .proof-preview {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .proof-preview-image {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            box-shadow: var(--shadow);
+        }
+        
+        .proof-preview-filename {
+            font-size: 14px;
+            color: var(--text-gray);
+        }
+        
+        .proof-upload-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        /* Pending Deposits Section */
+        .pending-deposits {
+            background-color: rgba(255, 193, 7, 0.1);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .pending-deposits-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: var(--warning);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .pending-deposit-item {
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .pending-deposit-amount {
+            font-weight: bold;
+            color: var(--gold-primary);
+        }
+        
+        .pending-deposit-status {
+            font-size: 12px;
+            color: var(--warning);
+        }
         
         /* Responsive Design */
         @media (max-width: 480px) {
@@ -2111,6 +2212,15 @@
                 padding: 10px 20px;
             }
             
+            /* Proof of Payment Upload */
+            .proof-upload-box {
+                padding: 20px;
+            }
+            
+            .proof-upload-icon {
+                font-size: 36px;
+            }
+            
             /* 3D Secure Responsive */
             .secure-icon {
                 font-size: 60px;
@@ -2177,6 +2287,15 @@
                 font-size: 16px;
             }
             
+            /* Proof of Payment Upload */
+            .proof-upload-box {
+                padding: 15px;
+            }
+            
+            .proof-upload-icon {
+                font-size: 32px;
+            }
+            
             /* 3D Secure Small Screens */
             .secure-icon {
                 font-size: 50px;
@@ -2230,6 +2349,15 @@
                 margin: 10px 0;
             }
             
+            /* Proof of Payment Upload */
+            .proof-upload-box {
+                padding: 15px;
+            }
+            
+            .proof-upload-icon {
+                font-size: 32px;
+            }
+            
             /* 3D Secure Small Height */
             .secure-verification {
                 justify-content: flex-start;
@@ -2253,6 +2381,14 @@
             .modal-content {
                 max-height: 95vh;
                 margin-top: 5px;
+            }
+            
+            .proof-upload-box {
+                padding: 10px;
+            }
+            
+            .proof-upload-icon {
+                font-size: 24px;
             }
             
             .secure-verification {
@@ -2433,6 +2569,17 @@
             
             <!-- Home Section -->
             <div id="home-section" class="section active">
+                <!-- Pending Deposits Section -->
+                <div id="pending-deposits-section" class="pending-deposits" style="display: none; margin: 20px 15px;">
+                    <div class="pending-deposits-title">
+                        <i class="fas fa-clock"></i>
+                        Pending Deposits
+                    </div>
+                    <div id="pending-deposits-list">
+                        <!-- Pending deposits will be added here -->
+                    </div>
+                </div>
+                
                 <!-- Banner Slider -->
                 <div class="banner-slider">
                     <div class="slider-container">
@@ -2995,47 +3142,7 @@
             </div>
         </div>
 
-        <!-- Enhanced Modal for Withdrawal -->
-        <div id="withdraw-modal" class="modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <div class="modal-title">Withdraw Funds</div>
-                    <div class="close-modal">&times;</div>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Select Wallet</label>
-                    <div class="wallet-selection">
-                        <div class="wallet-option" data-wallet="income">
-                            <div class="wallet-icon-large">💳</div>
-                            <div class="wallet-name">Income Wallet</div>
-                            <div class="wallet-balance">R0.00</div>
-                        </div>
-                        <div class="wallet-option" data-wallet="commission">
-                            <div class="wallet-icon-large">📊</div>
-                            <div class="wallet-name">Commission</div>
-                            <div class="wallet-balance">R0.00</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label" for="withdraw-amount">Amount (Minimum R45)</label>
-                    <input type="number" id="withdraw-amount" class="form-input" min="45" required>
-                </div>
-                
-                <div id="withdrawal-summary" class="withdrawal-summary" style="display: none;">
-                    <!-- Withdrawal summary will be inserted here -->
-                </div>
-                
-                <div class="payment-actions" style="display: none;">
-                    <button id="confirm-withdrawal" class="btn btn-primary">Confirm Withdrawal</button>
-                    <button id="cancel-withdrawal" class="btn btn-secondary">Cancel</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Modal for Payment Confirmation -->
+        <!-- Modal for Payment Confirmation with Proof Upload -->
         <div id="payment-confirm-modal" class="modal">
             <div class="modal-content">
                 <div class="modal-header">
@@ -3045,9 +3152,37 @@
                 <div class="warning-message">
                     <strong>Note:</strong> Please pay using immediate payment
                 </div>
-                <p>Have you completed the payment?</p>
+                
+                <div class="form-group">
+                    <label class="form-label">Upload Proof of Payment (Screenshot)</label>
+                    <div class="proof-upload-container">
+                        <div class="proof-upload-box" id="proof-upload-box">
+                            <div class="proof-upload-icon">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                            </div>
+                            <div class="proof-upload-text">
+                                Click to upload screenshot of payment
+                            </div>
+                            <div class="proof-upload-note">
+                                Supported formats: JPG, PNG, GIF (Max 5MB)
+                            </div>
+                            <input type="file" id="proof-file-input" accept="image/*" style="display: none;">
+                        </div>
+                        
+                        <div class="proof-preview" id="proof-preview">
+                            <img src="" alt="Proof Preview" class="proof-preview-image" id="proof-preview-image">
+                            <div class="proof-preview-filename" id="proof-filename"></div>
+                            <div class="proof-upload-actions">
+                                <button type="button" class="btn btn-secondary" id="change-proof-btn">Change</button>
+                                <button type="button" class="btn btn-primary" id="submit-proof-btn" disabled>Submit</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <p style="margin-top: 15px;">Have you completed the payment?</p>
                 <div class="btn-group">
-                    <button id="payment-yes" class="btn btn-primary">Yes, I've Paid</button>
+                    <button id="payment-yes" class="btn btn-primary" disabled>Yes, I've Paid</button>
                     <button id="payment-no" class="btn btn-secondary">No, Cancel</button>
                 </div>
             </div>
@@ -3510,6 +3645,7 @@
                     
                     document.getElementById('deposit-modal').style.display = 'none';
                     document.getElementById('payment-confirm-modal').style.display = 'flex';
+                    resetProofUpload();
                 });
                 
                 // Cancel payment
@@ -3517,8 +3653,81 @@
                     document.getElementById('deposit-modal').style.display = 'none';
                 });
                 
+                // Proof of payment upload functionality
+                const proofUploadBox = document.getElementById('proof-upload-box');
+                const proofFileInput = document.getElementById('proof-file-input');
+                const proofPreview = document.getElementById('proof-preview');
+                const proofPreviewImage = document.getElementById('proof-preview-image');
+                const proofFilename = document.getElementById('proof-filename');
+                const changeProofBtn = document.getElementById('change-proof-btn');
+                const submitProofBtn = document.getElementById('submit-proof-btn');
+                const paymentYesBtn = document.getElementById('payment-yes');
+                
+                proofUploadBox.addEventListener('click', function() {
+                    proofFileInput.click();
+                });
+                
+                proofFileInput.addEventListener('change', function(e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        // Check file size (max 5MB)
+                        if (file.size > 5 * 1024 * 1024) {
+                            alert('File size must be less than 5MB');
+                            return;
+                        }
+                        
+                        // Check file type
+                        if (!file.type.match('image.*')) {
+                            alert('Please select an image file');
+                            return;
+                        }
+                        
+                        // Preview the image
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            proofPreviewImage.src = e.target.result;
+                            proofFilename.textContent = file.name;
+                            proofUploadBox.style.display = 'none';
+                            proofPreview.style.display = 'block';
+                            submitProofBtn.disabled = false;
+                            paymentYesBtn.disabled = false;
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+                
+                changeProofBtn.addEventListener('click', function() {
+                    proofUploadBox.style.display = 'block';
+                    proofPreview.style.display = 'none';
+                    proofFileInput.value = '';
+                    submitProofBtn.disabled = true;
+                    paymentYesBtn.disabled = true;
+                });
+                
+                submitProofBtn.addEventListener('click', function() {
+                    const file = proofFileInput.files[0];
+                    if (!file) {
+                        alert('Please select a file first');
+                        return;
+                    }
+                    
+                    // In a real app, you would upload the file to a server
+                    // For this demo, we'll just simulate the upload
+                    showSuccessModal('Proof of payment uploaded successfully!');
+                    
+                    // Proceed to warning modal
+                    document.getElementById('payment-confirm-modal').style.display = 'none';
+                    document.getElementById('payment-warning-modal').style.display = 'flex';
+                });
+                
                 // Payment confirmation
                 document.getElementById('payment-yes').addEventListener('click', function() {
+                    const file = proofFileInput.files[0];
+                    if (!file) {
+                        alert('Please upload proof of payment first');
+                        return;
+                    }
+                    
                     document.getElementById('payment-confirm-modal').style.display = 'none';
                     document.getElementById('payment-warning-modal').style.display = 'flex';
                 });
@@ -3688,7 +3897,8 @@
                 invitationCode: generateInvitationCode(),
                 lastCheckin: null,
                 referredBy: null,
-                transactions: []
+                transactions: [],
+                pendingDeposits: [] // NEW: Track pending deposits
             };
             
             // Load data from Firebase if available
@@ -3698,6 +3908,9 @@
                     if (docSnap.exists()) {
                         userData = { ...userData, ...docSnap.data() };
                         updateUI();
+                        
+                        // Show pending deposits if any
+                        showPendingDeposits();
                         
                         // Load team members if any
                         if (userData.team && userData.team.members && userData.team.members.length > 0) {
@@ -3811,6 +4024,9 @@
                 
                 // Show success message
                 showSuccessModal(`Deposit of R${amount} has been successfully processed! Funds added to your Gold Wallet.`);
+                
+                // Remove from pending deposits if it was there
+                removePendingDeposit(depositId);
             }
             
             // Function to get deposit amount from form
@@ -3964,6 +4180,15 @@
                 document.querySelector('.payment-actions').style.display = 'none';
             }
             
+            // Function to reset proof upload
+            function resetProofUpload() {
+                document.getElementById('proof-upload-box').style.display = 'block';
+                document.getElementById('proof-preview').style.display = 'none';
+                document.getElementById('proof-file-input').value = '';
+                document.getElementById('submit-proof-btn').disabled = true;
+                document.getElementById('payment-yes').disabled = true;
+            }
+            
             // Function to reset withdrawal modal
             function resetWithdrawalModal() {
                 document.querySelectorAll('.wallet-option').forEach(opt => opt.classList.remove('active'));
@@ -3980,6 +4205,63 @@
             function showSuccessModal(message) {
                 document.getElementById('success-message').textContent = message;
                 document.getElementById('success-modal').style.display = 'flex';
+            }
+            
+            // Function to show pending deposits
+            function showPendingDeposits() {
+                const pendingDepositsSection = document.getElementById('pending-deposits-section');
+                const pendingDepositsList = document.getElementById('pending-deposits-list');
+                
+                if (!userData.pendingDeposits || userData.pendingDeposits.length === 0) {
+                    pendingDepositsSection.style.display = 'none';
+                    return;
+                }
+                
+                pendingDepositsSection.style.display = 'block';
+                pendingDepositsList.innerHTML = '';
+                
+                userData.pendingDeposits.forEach(deposit => {
+                    const depositElement = document.createElement('div');
+                    depositElement.className = 'pending-deposit-item';
+                    depositElement.innerHTML = `
+                        <div class="pending-deposit-details">
+                            <div class="pending-deposit-amount">R${deposit.amount}</div>
+                            <div class="pending-deposit-status">Pending Approval</div>
+                        </div>
+                        <div class="pending-deposit-date">${new Date(deposit.date).toLocaleDateString()}</div>
+                    `;
+                    pendingDepositsList.appendChild(depositElement);
+                });
+            }
+            
+            // Function to add pending deposit
+            function addPendingDeposit(amount) {
+                if (!userData.pendingDeposits) {
+                    userData.pendingDeposits = [];
+                }
+                
+                const depositId = 'PEND' + Date.now();
+                const deposit = {
+                    id: depositId,
+                    amount: amount,
+                    date: new Date().toISOString(),
+                    status: 'pending'
+                };
+                
+                userData.pendingDeposits.push(deposit);
+                saveUserData();
+                showPendingDeposits();
+                
+                return depositId;
+            }
+            
+            // Function to remove pending deposit
+            function removePendingDeposit(depositId) {
+                if (!userData.pendingDeposits) return;
+                
+                userData.pendingDeposits = userData.pendingDeposits.filter(deposit => deposit.id !== depositId);
+                saveUserData();
+                showPendingDeposits();
             }
             
             function updateUI() {
