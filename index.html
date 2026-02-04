@@ -3396,6 +3396,9 @@
                     // Show pending deposits if any
                     showPendingDeposits();
                     
+                    // Update orders list
+                    updateOrdersList();
+                    
                     return true;
                 } catch (error) {
                     console.error("Error loading from local storage:", error);
@@ -3447,6 +3450,8 @@
                     return;
                 }
                 
+                let dailyIncomeAdded = false;
+                
                 userData.orders.forEach(order => {
                     if (order.status === 'Active') {
                         // Calculate days since last payout
@@ -3467,6 +3472,8 @@
                                     order.status = 'Completed';
                                     userData.activeInvestments--;
                                 }
+                                
+                                dailyIncomeAdded = true;
                             }
                             
                             // Update last payout date
@@ -3476,11 +3483,13 @@
                 });
                 
                 // Update last daily income date
-                userData.lastDailyIncomeDate = today;
-                
-                // Save to local storage
-                if (auth.currentUser) {
-                    saveUserDataToLocalStorage(auth.currentUser.uid);
+                if (dailyIncomeAdded) {
+                    userData.lastDailyIncomeDate = today;
+                    
+                    // Save to local storage
+                    if (auth.currentUser) {
+                        saveUserDataToLocalStorage(auth.currentUser.uid);
+                    }
                 }
             }
             
@@ -3550,6 +3559,11 @@
                             section.classList.remove('active');
                         });
                         document.getElementById(targetId).classList.add('active');
+                        
+                        // Update orders list when navigating to My Mining section
+                        if (targetId === 'orders-section') {
+                            updateOrdersList();
+                        }
                     });
                 });
                 
@@ -3591,16 +3605,16 @@
                     alert("You found the premium gold feature! Enjoy 10% bonus on your next gold mining purchase with code: GOLD10");
                 });
                 
-                // Gold mining package click functionality
+                // Gold mining package click functionality - FIXED BALANCE CHECK
                 const investmentItems = document.querySelectorAll('.investment-item');
                 investmentItems.forEach(item => {
                     item.addEventListener('click', function() {
                         const investmentName = this.querySelector('.investment-name').textContent;
                         const investmentAmount = parseFloat(this.querySelector('.investment-amount').textContent.replace('R', ''));
                         
-                        // Check if user has enough balance
+                        // FIXED: Check if user has sufficient balance
                         if (userData.rechargeBalance < investmentAmount) {
-                            alert(`Insufficient balance! You need R${investmentAmount} in your Gold Wallet to purchase ${investmentName}`);
+                            showSuccessModal(`Insufficient balance! You need R${investmentAmount} in your Gold Wallet to purchase ${investmentName}. Please deposit first.`);
                             return;
                         }
                         
@@ -3617,16 +3631,16 @@
                     });
                 });
                 
-                // Gold mining purchase functionality
+                // Gold mining purchase functionality - FIXED BALANCE CHECK
                 const menuInvestmentItems = document.querySelectorAll('.menu-item');
                 menuInvestmentItems.forEach(item => {
                     item.addEventListener('click', function() {
                         const menuName = this.querySelector('.menu-name').textContent;
                         const menuPrice = parseFloat(this.querySelector('.menu-price').textContent.replace('R', ''));
                         
-                        // Check if user has enough balance
+                        // FIXED: Check if user has sufficient balance
                         if (userData.rechargeBalance < menuPrice) {
-                            alert(`Insufficient balance! You need R${menuPrice} in your Gold Wallet to purchase ${menuName}`);
+                            showSuccessModal(`Insufficient balance! You need R${menuPrice} in your Gold Wallet to purchase ${menuName}. Please deposit first.`);
                             return;
                         }
                         
@@ -3647,6 +3661,13 @@
                 // Gold mining purchase confirmation
                 document.getElementById('investment-yes').addEventListener('click', function() {
                     const investment = window.currentInvestment;
+                    
+                    // Check balance again before processing (double-check)
+                    if (userData.rechargeBalance < investment.amount) {
+                        showSuccessModal(`Insufficient balance! Purchase cancelled. Please deposit R${investment.amount} to your Gold Wallet.`);
+                        document.getElementById('investment-confirm-modal').style.display = 'none';
+                        return;
+                    }
                     
                     // IMMEDIATELY deduct amount from gold balance
                     userData.rechargeBalance -= investment.amount;
@@ -3677,6 +3698,9 @@
                     
                     // Update UI immediately
                     updateUI();
+                    
+                    // Update orders list
+                    updateOrdersList();
                     
                     // Show success message
                     showSuccessModal(`Gold mining started successfully! You will earn R${dailyIncome} daily from ${investment.name}.`);
@@ -4477,6 +4501,7 @@
                 showPendingDeposits();
             }
             
+            // FIXED: Function to update UI with user data
             function updateUI() {
                 // Update balances
                 document.querySelectorAll('.balance-value')[0].textContent = `R${userData.rechargeBalance.toFixed(2)}`;
@@ -4507,6 +4532,7 @@
                 }
             }
             
+            // FIXED: Function to update orders list in My Mining section
             function updateOrdersList() {
                 const ordersList = document.getElementById('orders-list');
                 const noOrdersMessage = document.getElementById('no-orders-message');
@@ -4528,7 +4554,8 @@
                         orderElement.innerHTML = `
                             <div class="order-details">
                                 <div class="order-name">${order.name}</div>
-                                <div class="order-status">${order.status} (${order.daysRemaining} days left)</div>
+                                <div class="order-status ${order.status === 'Active' ? 'successful' : 'pending'}">${order.status} (${order.daysRemaining} days left)</div>
+                                <div class="order-earnings">Daily Income: R${order.dailyIncome}</div>
                             </div>
                             <div class="order-amount">R${order.amount}</div>
                         `;
